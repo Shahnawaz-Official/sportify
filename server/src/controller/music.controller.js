@@ -4,20 +4,6 @@ const jwt = require("jsonwebtoken");
 const {uploadFile} = require("../services/storage.services");
 
 async function handleCreateMusic(req, res) {
-    const token = req.cookies.token;
-
-    if (!token) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
-        if (decoded.role !== "artist") {
-            return res.status(403).json({
-                message: "You don't have access to create music"
-            });
-        }
 
         const { title } = req.body;
         const file = req.file;
@@ -35,7 +21,7 @@ async function handleCreateMusic(req, res) {
         const music = await Music.create({
             uri: result.url,
             title,
-            artist: decoded.id
+            artist: req.user.id
         });
 
         return res.status(201).json({
@@ -48,31 +34,13 @@ async function handleCreateMusic(req, res) {
             }
         });
 
-    } catch (error) {
-        console.log(error);
-        return res.status(401).json({ message: "Unauthorized" });
-    }
 }
 
 async function handleCreateAlbum(req,res){
-     const token = req.cookies.token;
-
-    if (!token) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    try {
-         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-         if (decoded.role !== "artist") {
-            return res.status(403).json({
-                message: "You don't have access to create an Album"
-            });
-        }
-
         const { title,musics } = req.body;
              const album = await Album.create({
             title,
-            artist: decoded.id,
+            artist: req.user.id,
             musics:musics,
         });
           return res.status(201).json({
@@ -84,16 +52,49 @@ async function handleCreateAlbum(req,res){
                 musics:album.musics
             }
         });
-
-
-    } catch (error) {
-        console.log(error);
-        return res.status(401).json({ message: "Unauthorized" });
-    }
 }
+
+
+async function getAllMusics (req,res){
+                // populate method kiya karta hei refrance and populate se artist ki detail vi aa jaegi
+                // jis ka vi id aa rha hei na us detail la ke rakh deta hei
+    // const musics = await Music.find().populate("artist")
+    const musics = await Music.find()
+    .skip(1) // is ka matlab hei ki pahle music skip kar do us ke ba le jao data
+    .limit(3)// limit ye btata hei ki ek bar me client pe kiyna deta vejo ge
+    res.status(200).json({
+        message:"Music Fatch SuccessFully",
+        musics : musics
+    })
+}
+
+
+async function getAllAlbums(req,res){
+    const albums = await Album.find().select("title artist").populate("artist","userName email")
+    res.status(200).json({
+        message:"Albums Fatch SuccessFully",
+        albums : albums
+    })
+}
+
+async function getAlbumsById (req,res){
+    const albumId = req.params.albumid
+    const album = await Album.findById(albumId).populate("artist","userName email").populate("musics")
+    return res.status(200).json({
+        message:"Album Fatched Successfully",
+        album:album
+    })
+    
+    
+}
+
 
 
 module.exports = {
     handleCreateMusic,
-     handleCreateAlbum
+     handleCreateAlbum,
+     getAllMusics,
+     getAllAlbums,
+     getAlbumsById,
+     
 };

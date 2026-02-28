@@ -92,11 +92,17 @@ async function hendleUserLogin(req, res) {
     })
 }
 
-
+async function userLoguot (req,res){
+    res.clearCookie("token")
+    res.status(200).json({
+        message:"User Logged out successfully"
+    })
+}
 
 
 
 module.exports = {
     hendelUserRegister,
     hendleUserLogin,
+    userLoguot
 }
